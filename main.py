@@ -7,9 +7,10 @@ from fastapi.middleware.cors import CORSMiddleware
 
 # --- FastAPI 앱 및 MongoDB 설정 ---
 app = FastAPI()
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # React 개발 서버 주소
+    allow_origins=["*"],  # 개발 중에는 *로 두고, 배포 시에는 실제 도메인으로 제한
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -30,6 +31,7 @@ class UserRegister(BaseModel):
     know_level: int
 
 # --- API 라우트 정의 ---
+# 현재 db연동이 안되어 상호작용 안되는 것이니 백과는 상호작용 완료
 @app.post("/api/auth/register", status_code=status.HTTP_201_CREATED)
 def register(user: UserRegister):  # 들어오는 데이터를 UserRegister 모델로 받음
     # user_id 중복 확인

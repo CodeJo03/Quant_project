@@ -113,6 +113,23 @@ export default function RegisterPage() {
   }
 
   // 회원가입 처리
+  // 백과 연결 상호작용 잘 되는지 확인 완료
+  /* 
+  const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  try {
+    const response = await fetch('http://localhost:8000/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ test: "hello" }),
+    });
+    const data = await response.json();
+    alert("응답: " + JSON.stringify(data));
+  } catch (err) {
+    alert("에러: " + err);
+  }
+  }
+  */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -121,26 +138,26 @@ export default function RegisterPage() {
     setIsLoading(true)
 
     try {
-      // 실제로는 백엔드 API 호출
-      // const response = await fetch('/api/auth/register', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(formData)
-      // })
-
-      // 임시로 콘솔에 데이터 출력 (개발용)
-      console.log("회원가입 데이터:", {
-        user_id: formData.user_id,
-        password: formData.password,
-        name: formData.name,
-        age: Number.parseInt(formData.age),
-        email: formData.email,
-        know_level: Number.parseInt(formData.know_level),
-        like_company: formData.like_company,
-        like_category: formData.like_category,
+      // 필요한 필드만 추출
+      const { user_id, password, name, age, email, know_level } = formData
+      const response = await fetch('http://localhost:8000/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id,
+          password,
+          name,
+          age: Number(age),
+          email,
+          know_level: Number(know_level),
+        }),
       })
 
-      // 성공 시 로그인 페이지로 이동
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.detail || "회원가입 실패")
+      }
+
       alert("회원가입이 완료되었습니다! 로그인해주세요.")
       window.location.href = "/auth/login"
     } catch (error) {
@@ -150,7 +167,6 @@ export default function RegisterPage() {
       setIsLoading(false)
     }
   }
-
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
