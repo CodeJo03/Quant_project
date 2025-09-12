@@ -86,7 +86,7 @@ export default function RegisterPage() {
 
     if (!formData.password) newErrors.password = "비밀번호를 입력해주세요"
     if (formData.password.length < 8) newErrors.password = "비밀번호는 8자 이상이어야 합니다"
-    if (!/(?=.*[a-zA-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/.test(formData.password)) {
+    if (!/^(?=.*[a-zA-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]+$/.test(formData.password)) {
       newErrors.password = "비밀번호는 영문, 숫자, 특수문자를 포함해야 합니다"
     }
 

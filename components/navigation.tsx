@@ -4,7 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { BookOpen, Calculator, GraduationCap, TrendingUp, User, Menu, X } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 /**
  * 메인 네비게이션 컴포넌트
@@ -14,6 +14,31 @@ export function Navigation() {
   const pathname = usePathname()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
+
+  // 로그인 상태를 localStorage에서 확인
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const user = localStorage.getItem("user")
+      setIsLoggedIn(!!user)
+    }
+  }, [])
+
+  // 로그인/로그아웃 시 상태 동기화 (storage 이벤트 활용)
+  useEffect(() => {
+    const handleStorage = () => {
+      const user = localStorage.getItem("user")
+      setIsLoggedIn(!!user)
+    }
+    window.addEventListener("storage", handleStorage)
+    return () => window.removeEventListener("storage", handleStorage)
+  }, [])
+
+  // 로그아웃 핸들러
+  const handleLogout = () => {
+    localStorage.removeItem("user")
+    setIsLoggedIn(false)
+    window.location.href = "/"
+  }
 
   // 네비게이션 메뉴 아이템들 정의
   const navItems = [
@@ -86,8 +111,8 @@ export function Navigation() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setIsLoggedIn(false)}
-                  className="text-primary-foreground border-secondary hover:bg-secondary hover:text-secondary-foreground"
+                  onClick={handleLogout}
+                  className="text-primary-foreground border-secondary hover:bg-secondary hover:text-secondary-foreground bg-transparent"
                 >
                   로그아웃
                 </Button>

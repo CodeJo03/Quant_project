@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, status
 from pydantic import BaseModel, Field, EmailStr
 from pymongo import MongoClient
-from werkzeug.security import generate_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
 from bson import ObjectId
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -16,7 +16,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-client = MongoClient('mongodb://localhost:27017/')
+client = MongoClient('mongodb+srv://woo15907:Gzoro15907@cluster0.fkjfyzu.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0&tlsAllowInvalidCertificates=true', 27017)
 db = client['econolearn']
 users_collection = db['users']
 
@@ -29,6 +29,10 @@ class UserRegister(BaseModel):
     age: int
     email: EmailStr  # 이메일 형식 자동 검증
     know_level: int
+
+class UserLogin(BaseModel):
+    user_id: str
+    password: str
 
 # --- API 라우트 정의 ---
 # 현재 db연동이 안되어 상호작용 안되는 것이니 백과는 상호작용 완료
@@ -54,3 +58,19 @@ def register(user: UserRegister):  # 들어오는 데이터를 UserRegister 모�
     users_collection.insert_one(user_data)
     
     return {"message": "회원가입이 완료되었습니다", "user_id": user.user_id}
+
+@app.post("/api/auth/login")
+def login(user: UserLogin):
+    user_in_db = users_collection.find_one({'user_id': user.user_id})
+    if not user_in_db:
+        raise HTTPException(status_code=400, detail="존재하지 않는 사용자 ID입니다")
+    if not check_password_hash(user_in_db['password'], user.password):
+        raise HTTPException(status_code=400, detail="비밀번호가 올바르지 않습니다")
+    # 로그인 성공 시 필요한 정보만 반환
+    return {
+        "user_id": user_in_db["user_id"],
+        "name": user_in_db.get("name", ""),
+        "know_level": user_in_db.get("know_level", 0),
+        "email": user_in_db.get("email", ""),
+        "message": "로그인 성공"
+    }

@@ -66,33 +66,30 @@ export default function LoginPage() {
     setLoginError("")
 
     try {
-      // 실제로는 백엔드 API 호출
-      // const response = await fetch('/api/auth/login', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(formData)
-      // })
+      const response = await fetch('http://localhost:8000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      })
 
-      // 임시로 콘솔에 데이터 출력 (개발용)
-      console.log("로그인 시도:", formData)
+      const data = await response.json()
 
-      // 임시 로그인 성공 처리 (실제로는 서버 응답에 따라 처리)
-      if (formData.user_id && formData.password) {
-        // 로컬 스토리지에 임시 사용자 정보 저장 (실제로는 JWT 토큰 등 사용)
+      if (response.ok) {
+        // 로그인 성공: 사용자 정보 저장
         localStorage.setItem(
           "user",
           JSON.stringify({
-            user_id: formData.user_id,
-            name: "테스트 사용자", // 실제로는 서버에서 받아온 데이터
-            know_level: 2,
+            user_id: data.user_id,
+            name: data.name,
+            know_level: data.know_level,
+            email: data.email,
             isLoggedIn: true,
           }),
         )
-
         alert("로그인 성공!")
         window.location.href = "/dashboard"
       } else {
-        setLoginError("사용자 ID 또는 비밀번호가 올바르지 않습니다.")
+        setLoginError(data.detail || "사용자 ID 또는 비밀번호가 올바르지 않습니다.")
       }
     } catch (error) {
       console.error("로그인 오류:", error)

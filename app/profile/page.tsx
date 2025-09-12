@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,18 +16,21 @@ import { User, BookOpen, Trophy, TrendingUp, Settings, Star } from "lucide-react
  * 개인 정보, 학습 진도, 즐겨찾기, 설정을 관리하는 페이지
  */
 export default function ProfilePage() {
-  // 사용자 정보 상태 관리
-  const [userInfo, setUserInfo] = useState({
-    user_id: "woo12",
-    name: "조현우",
-    age: 20,
-    email: "woo15907@gmail.com",
-    know_level: 2,
-    like_company: ["삼성전자", "SK하이닉스", "NAVER"],
-    like_category: ["재무비율분석", "기술적분석", "가치투자"],
-  })
+  // 로그인 상태 및 사용자 정보
+  const [userInfo, setUserInfo] = useState<any>(null)
 
-  // 학습 통계 데이터
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const user = localStorage.getItem("user")
+      if (user) {
+        setUserInfo(JSON.parse(user))
+      } else {
+        setUserInfo(null)
+      }
+    }
+  }, [])
+
+  // 학습 통계 데이터 (더미)
   const learningStats = {
     totalQuizzes: 45,
     correctAnswers: 38,
@@ -35,6 +38,24 @@ export default function ProfilePage() {
     studiedTerms: 127,
     favoriteTerms: 23,
     currentStreak: 7,
+  }
+
+  if (!userInfo) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Card>
+          <CardHeader>
+            <CardTitle>로그인이 필요합니다</CardTitle>
+            <CardDescription>프로필 정보를 보려면 로그인을 해주세요.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild>
+              <a href="/auth/login">로그인 하러 가기</a>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (
@@ -109,21 +130,29 @@ export default function ProfilePage() {
                   <div>
                     <Label>관심 회사</Label>
                     <div className="flex flex-wrap gap-2 mt-2">
-                      {userInfo.like_company.map((company, index) => (
-                        <Badge key={index} variant="secondary">
-                          {company}
-                        </Badge>
-                      ))}
+                      {Array.isArray(userInfo.like_company) && userInfo.like_company.length > 0 ? (
+                        userInfo.like_company.map((company: string, index: number) => (
+                          <Badge key={index} variant="secondary">
+                            {company}
+                          </Badge>
+                        ))
+                      ) : (
+                        <span className="text-muted-foreground">아직 설정하지 않았습니다.</span>
+                      )}
                     </div>
                   </div>
                   <div>
                     <Label>관심 분석 카테고리</Label>
                     <div className="flex flex-wrap gap-2 mt-2">
-                      {userInfo.like_category.map((category, index) => (
-                        <Badge key={index} variant="outline">
-                          {category}
-                        </Badge>
-                      ))}
+                      {Array.isArray(userInfo.like_category) && userInfo.like_category.length > 0 ? (
+                        userInfo.like_category.map((category: string, index: number) => (
+                          <Badge key={index} variant="outline">
+                            {category}
+                          </Badge>
+                        ))
+                      ) : (
+                        <span className="text-muted-foreground">아직 설정하지 않았습니다.</span>
+                      )}
                     </div>
                   </div>
                 </div>
