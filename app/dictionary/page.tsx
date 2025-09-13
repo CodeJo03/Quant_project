@@ -22,7 +22,7 @@ import {
   BookmarkCheck,
 } from "lucide-react"
 
-/**
+/*
  * 경제사전 페이지 컴포넌트
  * 난이도별 경제 용어 검색, 즐겨찾기, 카테고리 필터링 기능 제공
  */
@@ -33,89 +33,13 @@ interface EconomicTerm {
   term: string
   definition: string
   example: string
-  difficulty: 1 | 2 | 3 // 1: 초급, 2: 중급, 3: 고급
+  difficulty: 0 | 1 | 2 | 3 | 4 // 0: 가본,  1: 초급, 2: 중급, 3: 고급, 4: 초고급
   category: string
   relatedTerms: string[]
 }
 
-// 샘플 경제 용어 데이터 (실제로는 MongoDB에서 가져올 데이터)
-const sampleTerms: EconomicTerm[] = [
-  {
-    id: "1",
-    term: "GDP",
-    definition:
-      "국내총생산(Gross Domestic Product)으로, 한 나라에서 일정 기간 동안 생산된 모든 재화와 서비스의 시장가치 총합",
-    example: "2023년 한국의 GDP는 약 2조 달러로, 세계 10위 수준입니다.",
-    difficulty: 1,
-    category: "거시경제",
-    relatedTerms: ["GNP", "경제성장률", "인플레이션"],
-  },
-  {
-    id: "2",
-    term: "인플레이션",
-    definition: "물가가 지속적으로 상승하는 현상으로, 화폐의 구매력이 감소하는 것을 의미",
-    example: "최근 유가 상승으로 인해 인플레이션이 심화되고 있습니다.",
-    difficulty: 1,
-    category: "거시경제",
-    relatedTerms: ["디플레이션", "물가지수", "금리"],
-  },
-  {
-    id: "3",
-    term: "PER",
-    definition:
-      "주가수익비율(Price Earnings Ratio)로, 주가를 주당순이익으로 나눈 값. 주식의 상대적 가치를 평가하는 지표",
-    example: "삼성전자의 PER이 15배라면, 현재 주가가 1년 순이익의 15배라는 의미입니다.",
-    difficulty: 2,
-    category: "투자분석",
-    relatedTerms: ["PBR", "ROE", "EPS"],
-  },
-  {
-    id: "4",
-    term: "ROE",
-    definition:
-      "자기자본이익률(Return On Equity)로, 기업이 자기자본을 얼마나 효율적으로 활용하여 이익을 창출했는지 나타내는 지표",
-    example: "ROE가 15%인 기업은 자기자본 100원으로 15원의 순이익을 창출했다는 의미입니다.",
-    difficulty: 2,
-    category: "재무분석",
-    relatedTerms: ["ROA", "PER", "부채비율"],
-  },
-  {
-    id: "5",
-    term: "샤프비율",
-    definition: "위험 대비 수익률을 측정하는 지표로, 무위험수익률을 초과하는 수익률을 변동성으로 나눈 값",
-    example: "샤프비율이 1.5인 포트폴리오는 위험 단위당 1.5의 초과수익을 제공한다는 의미입니다.",
-    difficulty: 3,
-    category: "포트폴리오",
-    relatedTerms: ["베타", "알파", "변동성"],
-  },
-  {
-    id: "6",
-    term: "베타",
-    definition: "개별 주식이나 포트폴리오가 시장 전체의 움직임에 대해 얼마나 민감하게 반응하는지를 나타내는 지표",
-    example: "베타가 1.2인 주식은 시장이 10% 상승할 때 12% 상승할 가능성이 높습니다.",
-    difficulty: 3,
-    category: "포트폴리오",
-    relatedTerms: ["샤프비율", "알파", "CAPM"],
-  },
-  {
-    id: "7",
-    term: "금리",
-    definition: "돈을 빌려주거나 빌릴 때 지급하는 대가의 비율로, 경제 전반에 큰 영향을 미치는 중요한 경제지표",
-    example: "한국은행이 기준금리를 3.5%로 인상하면서 대출금리도 함께 상승했습니다.",
-    difficulty: 1,
-    category: "거시경제",
-    relatedTerms: ["인플레이션", "통화정책", "채권"],
-  },
-  {
-    id: "8",
-    term: "부채비율",
-    definition: "기업의 총부채를 자기자본으로 나눈 비율로, 기업의 재무 안정성을 평가하는 지표",
-    example: "부채비율이 200%인 기업은 자기자본의 2배에 해당하는 부채를 보유하고 있다는 의미입니다.",
-    difficulty: 2,
-    category: "재무분석",
-    relatedTerms: ["유동비율", "ROE", "이자보상배율"],
-  },
-]
+// 데이터베이스에서 가져온 경제용어 저장공간
+const sampleTerms: EconomicTerm[] = []
 
 export default function DictionaryPage() {
   const [user, setUser] = useState<any>(null)
@@ -124,6 +48,7 @@ export default function DictionaryPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
   const [favorites, setFavorites] = useState<string[]>([])
   const [activeTab, setActiveTab] = useState("all")
+  const [terms, setTerms] = useState<EconomicTerm[]>([])
 
   // 사용자 정보 로드
   useEffect(() => {
@@ -148,6 +73,14 @@ export default function DictionaryPage() {
     }
   }, [])
 
+  // 용어 데이터 로드
+  useEffect(() => {
+    fetch("http://localhost:8000/api/dictionary/terms")
+      .then((res) => res.json())
+      .then((data) => setTerms(data))
+      .catch(() => setTerms([]))
+  }, [])
+
   // 즐겨찾기 토글 함수
   const toggleFavorite = (termId: string) => {
     const newFavorites = favorites.includes(termId) ? favorites.filter((id) => id !== termId) : [...favorites, termId]
@@ -158,13 +91,13 @@ export default function DictionaryPage() {
 
   // 카테고리 목록 추출
   const categories = useMemo(() => {
-    const uniqueCategories = [...new Set(sampleTerms.map((term) => term.category))]
+    const uniqueCategories = [...new Set(terms.map((term) => term.category))]
     return uniqueCategories
-  }, [])
+  }, [terms])
 
   // 필터링된 용어 목록
   const filteredTerms = useMemo(() => {
-    let filtered = sampleTerms
+    let filtered = terms
 
     // 검색어 필터링
     if (searchTerm) {
@@ -195,7 +128,7 @@ export default function DictionaryPage() {
     }
 
     return filtered
-  }, [searchTerm, selectedDifficulty, selectedCategory, activeTab, favorites, user])
+  }, [searchTerm, selectedDifficulty, selectedCategory, activeTab, favorites, user, terms])
 
   // 난이도별 색상 및 라벨
   const getDifficultyInfo = (difficulty: number) => {
@@ -437,7 +370,7 @@ export default function DictionaryPage() {
             <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
               <Card>
                 <CardContent className="p-6 text-center">
-                  <div className="text-2xl font-bold text-primary mb-2">{sampleTerms.length}</div>
+                  <div className="text-2xl font-bold text-primary mb-2">{terms.length}</div>
                   <div className="text-sm text-muted-foreground">전체 용어</div>
                 </CardContent>
               </Card>

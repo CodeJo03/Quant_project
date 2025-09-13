@@ -21,7 +21,7 @@ db = client['econolearn']
 users_collection = db['users']
 
 # --- Pydantic 모델 정의 (데이터 형태 선언) ---
-# 이 모델 하나로 데이터 유효성 검사, JSON 변환이 모두 끝납니다.
+# 데이터 유효성 검사, JSON 변환
 class UserRegister(BaseModel):
     user_id: str
     password: str
@@ -34,10 +34,20 @@ class UserLogin(BaseModel):
     user_id: str
     password: str
 
+# --- EconomicTerm 모델 정의 ---
+class EconomicTermModel(BaseModel):
+    id: str
+    term: str
+    definition: str
+    example: str
+    difficulty: int
+    category: str
+    relatedTerms: list[str]
+
 # --- API 라우트 정의 ---
-# 현재 db연동이 안되어 상호작용 안되는 것이니 백과는 상호작용 완료
+
 @app.post("/api/auth/register", status_code=status.HTTP_201_CREATED)
-def register(user: UserRegister):  # 들어오는 데이터를 UserRegister 모델로 받음
+def register(user: UserRegister):  # 들어오는 데이터 : UserRegister 모델
     # user_id 중복 확인
     if users_collection.find_one({'user_id': user.user_id}):
         raise HTTPException(status_code=400, detail="이미 존재하는 사용자 ID입니다")
@@ -46,12 +56,11 @@ def register(user: UserRegister):  # 들어오는 데이터를 UserRegister 모�
     if users_collection.find_one({'email': user.email}):
         raise HTTPException(status_code=400, detail="이미 존재하는 이메일입니다")
 
-    # FastAPI가 자동으로 user.user_id, user.password 등을 검증해주므로
-    # 수동으로 필드를 확인할 필요가 없습니다.
+    # FastAPI가 자동으로 user.user_id, user.password 등을 검증
 
     hashed_password = generate_password_hash(user.password)
     
-    # user.dict()를 통해 Pydantic 모델을 딕셔너리로 변환
+    #Pydantic 모델을 딕셔너리로 변환
     user_data = user.dict()
     user_data['password'] = hashed_password
     
@@ -74,3 +83,18 @@ def login(user: UserLogin):
         "email": user_in_db.get("email", ""),
         "message": "로그인 성공"
     }
+
+@app.get("/api/dictionary/terms")
+def get_economic_terms():
+    terms = []
+    for doc in db['economic_terms'].find():
+        terms.append({
+            "id": str(doc.get("_id", "")),
+            "term": doc["term"],
+            "definition": doc["definition"],
+            "example": doc["example"],
+            "difficulty": doc["difficulty"],
+            "category": doc["category"],
+            "relatedTerms": doc.get("related_terms", []),
+        })
+    return terms
