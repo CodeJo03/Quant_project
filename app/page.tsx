@@ -173,7 +173,7 @@ export default function HomePage() {
               <span className="text-2xl font-bold">EconoLearn</span>
             </div>
             <p className="text-primary-foreground/80 mb-4">20대를 위한 경제 학습 플랫폼</p>
-            <div className="text-sm text-primary-foreground/60">© 2024 EconoLearn. 포트폴리오 프로젝트입니다.</div>
+            <div className="text-sm text-primary-foreground/60">© 2025 EconoLearn. 포트폴리오 프로젝트입니다.</div>
           </div>
         </div>
       </footer>
