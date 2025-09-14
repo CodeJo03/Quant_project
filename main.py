@@ -29,7 +29,17 @@ class UserRegister(BaseModel):
     age: int
     email: EmailStr  # 이메일 형식 자동 검증
     know_level: int
-
+    like_company : list[str]
+    like_category : list[str]
+    
+class UserRefresh(BaseModel):
+    name : str
+    age : int
+    email : EmailStr
+    know_level: int
+    like_company : list[str]
+    like_category : list[str]
+    
 class UserLogin(BaseModel):
     user_id: str
     password: str
@@ -83,6 +93,11 @@ def login(user: UserLogin):
         "email": user_in_db.get("email", ""),
         "message": "로그인 성공"
     }
+    
+@app.post("/api/profile/refresh")
+def refresh(user: UserRefresh):
+    return 0
+    
 
 @app.get("/api/dictionary/terms")
 def get_economic_terms():

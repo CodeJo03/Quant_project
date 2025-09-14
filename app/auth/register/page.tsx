@@ -139,7 +139,7 @@ export default function RegisterPage() {
 
     try {
       // 필요한 필드만 추출
-      const { user_id, password, name, age, email, know_level } = formData
+      const { user_id, password, name, age, email, know_level, like_company, like_category } = formData
       const response = await fetch('http://localhost:8000/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -150,6 +150,8 @@ export default function RegisterPage() {
           age: Number(age),
           email,
           know_level: Number(know_level),
+          like_company,
+          like_category
         }),
       })
 
