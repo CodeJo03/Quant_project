@@ -139,8 +139,6 @@ export default function DictionaryPage() {
         return { label: "중급", color: "bg-blue-100 text-blue-800", icon: "🔵" }
       case 3:
         return { label: "고급", color: "bg-purple-100 text-purple-800", icon: "🟣" }
-      case 4:
-        return { label: "초고급", color: "bg-purple-100 text-purple-800", icon: "🟣" }
       default:
         return { label: "중급", color: "bg-blue-100 text-blue-800", icon: "🔵" }
     }
@@ -206,7 +204,6 @@ export default function DictionaryPage() {
                         <SelectItem value="1">초급</SelectItem>
                         <SelectItem value="2">중급</SelectItem>
                         <SelectItem value="3">고급</SelectItem>
-                        <SelectItem value="4">초고급</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
