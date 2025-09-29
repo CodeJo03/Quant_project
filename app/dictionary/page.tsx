@@ -35,7 +35,7 @@ interface EconomicTerm {
   term: string
   definition: string
   example: string
-  difficulty: 0 | 1 | 2 | 3 | 4 // 0: 가본,  1: 초급, 2: 중급, 3: 고급, 4: 초고급
+  difficulty: 1 | 2 | 3 // 1: 초급, 2: 중급, 3: 고급
   category: string
   relatedTerms: string[]
 }
@@ -193,7 +193,7 @@ export default function DictionaryPage() {
   // 초성별 그룹화
   const groupedTerms = useMemo(() => {
     const groups: { [key: string]: EconomicTerm[] } = {}
-    const consonants = ['ㄱ', 'ㄲ','ㄴ', 'ㄷ', 'ㄸ','ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ','ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ']
+    const consonants = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ']
     
     filteredTerms.forEach(term => {
       const firstChar = term.term.charAt(0)
