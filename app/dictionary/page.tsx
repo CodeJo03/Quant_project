@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import { Navigation } from "@/components/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -20,6 +20,8 @@ import {
   PieChart,
   Bookmark,
   BookmarkCheck,
+  ChevronUp,
+  Loader2,
 } from "lucide-react"
 
 /*
@@ -38,8 +40,10 @@ interface EconomicTerm {
   relatedTerms: string[]
 }
 
-// 데이터베이스에서 가져온 경제용어 저장공간
-const sampleTerms: EconomicTerm[] = []
+// 전역 데이터 캐시
+let cachedTerms: EconomicTerm[] | null = null
+let cacheTimestamp: number | null = null
+const CACHE_DURATION = 30 * 60 * 1000 // 30분 캐시 유지
 
 export default function DictionaryPage() {
   const [user, setUser] = useState<any>(null)
@@ -49,6 +53,9 @@ export default function DictionaryPage() {
   const [favorites, setFavorites] = useState<string[]>([])
   const [activeTab, setActiveTab] = useState("all")
   const [terms, setTerms] = useState<EconomicTerm[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [showScrollTop, setShowScrollTop] = useState(false)
+  const searchRef = useRef<HTMLDivElement>(null)
 
   // 사용자 정보 로드
   useEffect(() => {
@@ -73,12 +80,64 @@ export default function DictionaryPage() {
     }
   }, [])
 
-  // 용어 데이터 로드
+  // 용어 데이터 로드 (캐싱 적용)
   useEffect(() => {
-    fetch("http://localhost:8000/api/dictionary/terms")
-      .then((res) => res.json())
-      .then((data) => setTerms(data))
-      .catch(() => setTerms([]))
+    const loadTerms = async () => {
+      setIsLoading(true)
+      
+      // 캐시 확인
+      if (cachedTerms && cacheTimestamp && Date.now() - cacheTimestamp < CACHE_DURATION) {
+        console.log("캐시된 데이터 사용")
+        setTerms(cachedTerms)
+        setIsLoading(false)
+        return
+      }
+
+      // 새로 데이터 로드
+      try {
+        const response = await fetch("http://localhost:8000/api/dictionary/terms")
+        const data = await response.json()
+        
+        // 캐시 저장
+        cachedTerms = data
+        cacheTimestamp = Date.now()
+        
+        // 세션 스토리지에도 백업 (브라우저 새로고침 대비)
+        sessionStorage.setItem("termsCache", JSON.stringify({
+          data: data,
+          timestamp: Date.now()
+        }))
+        
+        setTerms(data)
+      } catch (error) {
+        console.error("데이터 로드 실패:", error)
+        
+        // 세션 스토리지에서 백업 데이터 확인
+        const backup = sessionStorage.getItem("termsCache")
+        if (backup) {
+          const { data, timestamp } = JSON.parse(backup)
+          if (Date.now() - timestamp < CACHE_DURATION) {
+            cachedTerms = data
+            cacheTimestamp = timestamp
+            setTerms(data)
+          }
+        }
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadTerms()
+  }, [])
+
+  // 스크롤 이벤트 리스너
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 300)
+    }
+
+    window.addEventListener("scroll", handleScroll)
+    return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
   // 즐겨찾기 토글 함수
@@ -127,8 +186,52 @@ export default function DictionaryPage() {
       filtered = filtered.filter((term) => term.difficulty <= userLevel + 1 && term.difficulty >= userLevel)
     }
 
-    return filtered
+    // 가나다순 정렬
+    return filtered.sort((a, b) => a.term.localeCompare(b.term, 'ko'))
   }, [searchTerm, selectedDifficulty, selectedCategory, activeTab, favorites, user, terms])
+
+  // 초성별 그룹화
+  const groupedTerms = useMemo(() => {
+    const groups: { [key: string]: EconomicTerm[] } = {}
+    const consonants = ['ㄱ', 'ㄲ','ㄴ', 'ㄷ', 'ㄸ','ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ','ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ']
+    
+    filteredTerms.forEach(term => {
+      const firstChar = term.term.charAt(0)
+      const code = firstChar.charCodeAt(0) - 44032
+      
+      if (code >= 0 && code <= 11171) {
+        const consonantIndex = Math.floor(code / 588)
+        const consonant = consonants[consonantIndex]
+        
+        if (!groups[consonant]) {
+          groups[consonant] = []
+        }
+        groups[consonant].push(term)
+      } else {
+        // 한글이 아닌 경우 (영어, 숫자 등)
+        const key = /[A-Za-z]/.test(firstChar) ? 'ABC' : '#'
+        if (!groups[key]) {
+          groups[key] = []
+        }
+        groups[key].push(term)
+      }
+    })
+    
+    return groups
+  }, [filteredTerms])
+
+  // 특정 초성 그룹으로 스크롤
+  const scrollToGroup = (consonant: string) => {
+    const element = document.getElementById(`group-${consonant}`)
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }
+
+  // 검색 영역으로 스크롤
+  const scrollToSearch = () => {
+    searchRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   // 난이도별 색상 및 라벨
   const getDifficultyInfo = (difficulty: number) => {
@@ -164,6 +267,55 @@ export default function DictionaryPage() {
     <div className="min-h-screen bg-background">
       <Navigation />
 
+      {/* 플로팅 사이드바 */}
+      <div className={`fixed right-4 top-1/2 -translate-y-1/2 z-50 transition-opacity duration-300 ${showScrollTop ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+        <Card className="shadow-lg">
+          <CardContent className="p-2">
+            <div className="flex flex-col gap-1">
+              {/* 검색으로 이동 */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={scrollToSearch}
+                className="w-10 h-10 p-0"
+                title="검색"
+              >
+                <Search className="h-4 w-4" />
+              </Button>
+              
+              <div className="w-full h-px bg-border my-1" />
+              
+              {/* 초성 네비게이션 */}
+              {Object.keys(groupedTerms).sort().map(consonant => (
+                <Button
+                  key={consonant}
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => scrollToGroup(consonant)}
+                  className="w-10 h-10 p-0 text-xs font-bold"
+                  title={`${consonant}로 이동`}
+                >
+                  {consonant}
+                </Button>
+              ))}
+              
+              <div className="w-full h-px bg-border my-1" />
+              
+              {/* 맨 위로 */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                className="w-10 h-10 p-0"
+                title="맨 위로"
+              >
+                <ChevronUp className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       <div className="py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* 헤더 섹션 */}
@@ -178,68 +330,70 @@ export default function DictionaryPage() {
           </div>
 
           {/* 검색 및 필터 섹션 */}
-          <Card className="mb-8">
-            <CardContent className="p-6">
-              <div className="space-y-4">
-                {/* 검색바 */}
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="경제 용어를 검색하세요..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-
-                {/* 필터 옵션 */}
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <div className="flex-1">
-                    <Select value={selectedDifficulty} onValueChange={setSelectedDifficulty}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="난이도 선택" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">모든 난이도</SelectItem>
-                        <SelectItem value="1">초급</SelectItem>
-                        <SelectItem value="2">중급</SelectItem>
-                        <SelectItem value="3">고급</SelectItem>
-                      </SelectContent>
-                    </Select>
+          <div ref={searchRef}>
+            <Card className="mb-8">
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  {/* 검색바 */}
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="경제 용어를 검색하세요..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
                   </div>
 
-                  <div className="flex-1">
-                    <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="카테고리 선택" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">모든 카테고리</SelectItem>
-                        {categories.map((category) => (
-                          <SelectItem key={category} value={category}>
-                            {category}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  {/* 필터 옵션 */}
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="flex-1">
+                      <Select value={selectedDifficulty} onValueChange={setSelectedDifficulty}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="난이도 선택" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">모든 난이도</SelectItem>
+                          <SelectItem value="1">초급</SelectItem>
+                          <SelectItem value="2">중급</SelectItem>
+                          <SelectItem value="3">고급</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setSearchTerm("")
-                      setSelectedDifficulty("all")
-                      setSelectedCategory("all")
-                    }}
-                    className="bg-transparent"
-                  >
-                    <Filter className="h-4 w-4 mr-2" />
-                    초기화
-                  </Button>
+                    <div className="flex-1">
+                      <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="카테고리 선택" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">모든 카테고리</SelectItem>
+                          {categories.map((category) => (
+                            <SelectItem key={category} value={category}>
+                              {category}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setSearchTerm("")
+                        setSelectedDifficulty("all")
+                        setSelectedCategory("all")
+                      }}
+                      className="bg-transparent"
+                    >
+                      <Filter className="h-4 w-4 mr-2" />
+                      초기화
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
 
           {/* 탭 네비게이션 */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
@@ -259,7 +413,9 @@ export default function DictionaryPage() {
             </TabsList>
 
             <TabsContent value="all" className="mt-6">
-              <div className="mb-4 text-sm text-muted-foreground">총 {filteredTerms.length}개의 용어가 있습니다</div>
+              <div className="mb-4 text-sm text-muted-foreground">
+                {isLoading ? "데이터를 불러오는 중..." : `총 ${filteredTerms.length}개의 용어가 있습니다`}
+              </div>
             </TabsContent>
 
             <TabsContent value="recommended" className="mt-6">
@@ -269,18 +425,30 @@ export default function DictionaryPage() {
                     ? `${user.name}님의 레벨(${getDifficultyInfo(user.know_level).label})에 맞는 추천 용어`
                     : "로그인 후 개인 맞춤 추천을 받아보세요"}
                 </div>
-                <div className="text-sm text-muted-foreground">총 {filteredTerms.length}개의 추천 용어가 있습니다</div>
+                <div className="text-sm text-muted-foreground">
+                  {isLoading ? "데이터를 불러오는 중..." : `총 ${filteredTerms.length}개의 추천 용어가 있습니다`}
+                </div>
               </div>
             </TabsContent>
 
             <TabsContent value="favorites" className="mt-6">
-              <div className="mb-4 text-sm text-muted-foreground">즐겨찾기한 {filteredTerms.length}개의 용어입니다</div>
+              <div className="mb-4 text-sm text-muted-foreground">
+                {isLoading ? "데이터를 불러오는 중..." : `즐겨찾기한 ${filteredTerms.length}개의 용어입니다`}
+              </div>
             </TabsContent>
           </Tabs>
 
           {/* 용어 목록 */}
           <div className="grid gap-6">
-            {filteredTerms.length === 0 ? (
+            {isLoading ? (
+              <Card>
+                <CardContent className="p-12 text-center">
+                  <Loader2 className="h-12 w-12 text-muted-foreground mx-auto mb-4 animate-spin" />
+                  <h3 className="text-lg font-medium text-foreground mb-2">현재 데이터를 받아오는 중입니다</h3>
+                  <p className="text-muted-foreground">잠시만 기다려주세요...</p>
+                </CardContent>
+              </Card>
+            ) : filteredTerms.length === 0 ? (
               <Card>
                 <CardContent className="p-12 text-center">
                   <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -289,84 +457,99 @@ export default function DictionaryPage() {
                 </CardContent>
               </Card>
             ) : (
-              filteredTerms.map((term) => {
-                const difficultyInfo = getDifficultyInfo(term.difficulty)
-                const isFavorite = favorites.includes(term.id)
-
-                return (
-                  <Card key={term.id} className="hover:shadow-lg transition-shadow">
-                    <CardHeader>
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-3 mb-2">
-                            <CardTitle className="text-xl">{term.term}</CardTitle>
-                            <Badge className={difficultyInfo.color}>{difficultyInfo.label}</Badge>
-                            <div className="flex items-center space-x-1 text-muted-foreground">
-                              {getCategoryIcon(term.category)}
-                              <span className="text-sm">{term.category}</span>
-                            </div>
-                          </div>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => toggleFavorite(term.id)}
-                          className="text-muted-foreground hover:text-primary"
-                        >
-                          {isFavorite ? (
-                            <BookmarkCheck className="h-5 w-5 text-primary" />
-                          ) : (
-                            <Bookmark className="h-5 w-5" />
-                          )}
-                        </Button>
+              Object.entries(groupedTerms).sort().map(([consonant, groupTerms]) => (
+                <div key={consonant} id={`group-${consonant}`} className="space-y-4">
+                  {/* 초성 헤더 */}
+                  <div className="sticky top-0 bg-background z-10 py-2">
+                    <div className="flex items-center gap-2">
+                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                        <span className="text-sm font-bold text-primary">{consonant}</span>
                       </div>
-                    </CardHeader>
+                      <span className="text-sm text-muted-foreground">{groupTerms.length}개 용어</span>
+                    </div>
+                  </div>
+                  
+                  {/* 그룹 내 용어들 */}
+                  {groupTerms.map((term) => {
+                    const difficultyInfo = getDifficultyInfo(term.difficulty)
+                    const isFavorite = favorites.includes(term.id)
 
-                    <CardContent>
-                      <div className="space-y-4">
-                        {/* 정의 */}
-                        <div>
-                          <h4 className="font-medium text-foreground mb-2">정의</h4>
-                          <p className="text-muted-foreground leading-relaxed">{term.definition}</p>
-                        </div>
-
-                        {/* 예시 */}
-                        <div>
-                          <h4 className="font-medium text-foreground mb-2">예시</h4>
-                          <div className="bg-muted p-3 rounded-lg">
-                            <p className="text-sm text-muted-foreground italic">{term.example}</p>
-                          </div>
-                        </div>
-
-                        {/* 관련 용어 */}
-                        {term.relatedTerms.length > 0 && (
-                          <div>
-                            <h4 className="font-medium text-foreground mb-2">관련 용어</h4>
-                            <div className="flex flex-wrap gap-2">
-                              {term.relatedTerms.map((relatedTerm, index) => (
-                                <Button
-                                  key={index}
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => setSearchTerm(relatedTerm)}
-                                  className="text-xs bg-transparent hover:bg-primary/5"
-                                >
-                                  {relatedTerm}
-                                </Button>
-                              ))}
+                    return (
+                      <Card key={term.id} className="hover:shadow-lg transition-shadow">
+                        <CardHeader>
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-3 mb-2">
+                                <CardTitle className="text-xl">{term.term}</CardTitle>
+                                <Badge className={difficultyInfo.color}>{difficultyInfo.label}</Badge>
+                                <div className="flex items-center space-x-1 text-muted-foreground">
+                                  {getCategoryIcon(term.category)}
+                                  <span className="text-sm">{term.category}</span>
+                                </div>
+                              </div>
                             </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleFavorite(term.id)}
+                              className="text-muted-foreground hover:text-primary"
+                            >
+                              {isFavorite ? (
+                                <BookmarkCheck className="h-5 w-5 text-primary" />
+                              ) : (
+                                <Bookmark className="h-5 w-5" />
+                              )}
+                            </Button>
                           </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )
-              })
+                        </CardHeader>
+
+                        <CardContent>
+                          <div className="space-y-4">
+                            {/* 정의 */}
+                            <div>
+                              <h4 className="font-medium text-foreground mb-2">정의</h4>
+                              <p className="text-muted-foreground leading-relaxed">{term.definition}</p>
+                            </div>
+
+                            {/* 예시 */}
+                            <div>
+                              <h4 className="font-medium text-foreground mb-2">예시</h4>
+                              <div className="bg-muted p-3 rounded-lg">
+                                <p className="text-sm text-muted-foreground italic">{term.example}</p>
+                              </div>
+                            </div>
+
+                            {/* 관련 용어 */}
+                            {term.relatedTerms.length > 0 && (
+                              <div>
+                                <h4 className="font-medium text-foreground mb-2">관련 용어</h4>
+                                <div className="flex flex-wrap gap-2">
+                                  {term.relatedTerms.map((relatedTerm, index) => (
+                                    <Button
+                                      key={index}
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => setSearchTerm(relatedTerm)}
+                                      className="text-xs bg-transparent hover:bg-primary/5"
+                                    >
+                                      {relatedTerm}
+                                    </Button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )
+                  })}
+                </div>
+              ))
             )}
           </div>
 
           {/* 하단 통계 */}
-          {filteredTerms.length > 0 && (
+          {!isLoading && filteredTerms.length > 0 && (
             <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
               <Card>
                 <CardContent className="p-6 text-center">
