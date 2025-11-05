@@ -18,9 +18,9 @@ def init_economic_terms():
     # 기존 데이터 삭제
     terms_collection.delete_many({})
     
-    # 경제용어.txt 파일 읽기
+    # 경제용어.json 파일 읽기
     try:
-        with open('경제용어.txt', 'r', encoding='utf-8') as file:
+        with open('경제용어.json', 'r', encoding='utf-8') as file:
             terms_data = json.load(file)
             
         # 데이터 삽입
@@ -37,9 +37,9 @@ def init_quizzes():
     # 기존 데이터 삭제
     quizzes_collection.delete_many({})
     
-    # 경제 퀴즈들.txt 파일 읽기
+    # economic_quiz_questions.json 파일 읽기
     try:
-        with open('경제 퀴즈들.txt', 'r', encoding='utf-8') as file:
+        with open('economic_quiz_questions.json', 'r', encoding='utf-8') as file:
             quizzes_data = json.load(file)
             
         # 데이터 삽입
@@ -66,7 +66,7 @@ def init_companies():
             "created_at": datetime.utcnow()
         },
         {
-            "name": "SK하이닉스",
+            "name": "SK하이닉스", 
             "symbol": "000660",
             "sector": "기술",
             "market_cap": 80000000,
@@ -75,7 +75,7 @@ def init_companies():
         },
         {
             "name": "NAVER",
-            "symbol": "035420",
+            "symbol": "035420", 
             "sector": "인터넷",
             "market_cap": 30000000,
             "description": "국내 최대 포털 및 IT 서비스 기업",
