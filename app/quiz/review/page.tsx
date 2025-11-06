@@ -7,18 +7,13 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { CheckCircle, XCircle, ArrowLeft, ArrowRight, RotateCcw, Trophy } from "lucide-react"
-
-/**
- * 틀린 문제 복습 페이지 컴포넌트
- * 이전에 틀린 문제들을 다시 풀어볼 수 있는 기능 제공
- */
+import { CheckCircle, XCircle, ArrowLeft, ArrowRight, RotateCcw, Trophy, Loader2, Clock } from "lucide-react"
 
 interface Question {
-  id: string
+  _id: string
   question: string
   options: string[]
-  correctAnswer: number
+  correct_answer: number
   explanation: string
   difficulty: 1 | 2 | 3
   category: string
@@ -26,37 +21,65 @@ interface Question {
 
 export default function QuizReviewPage() {
   const router = useRouter()
+  const [user, setUser] = useState<any>(null)
   const [wrongQuestions, setWrongQuestions] = useState<Question[]>([])
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [selectedAnswers, setSelectedAnswers] = useState<number[]>([])
   const [showResults, setShowResults] = useState(false)
   const [isReviewStarted, setIsReviewStarted] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [startTime, setStartTime] = useState<number>(0)
+  const [timeElapsed, setTimeElapsed] = useState(0)
 
-  // 틀린 문제들 로드
+  // 사용자 정보 로드
   useEffect(() => {
-    const quizResults = JSON.parse(localStorage.getItem("quizResults") || "[]")
-    const allWrongQuestions: Question[] = []
-
-    quizResults.forEach((result: any) => {
-      allWrongQuestions.push(...result.wrongAnswers)
-    })
-
-    // 중복 제거 (같은 문제 ID 기준)
-    const uniqueWrongQuestions = allWrongQuestions.filter(
-      (question, index, self) => index === self.findIndex((q) => q.id === question.id),
-    )
-
-    setWrongQuestions(uniqueWrongQuestions)
-    setSelectedAnswers(new Array(uniqueWrongQuestions.length).fill(-1))
-
-    if (uniqueWrongQuestions.length === 0) {
+    const userData = localStorage.getItem("user")
+    if (userData) {
+      const parsedUser = JSON.parse(userData)
+      setUser(parsedUser)
+      fetchWrongQuestions(parsedUser.user_id)
+    } else {
       router.push("/quiz")
     }
-  }, [router])
+  }, [])
+
+  // 타이머 효과
+  useEffect(() => {
+    let interval: NodeJS.Timeout
+    if (isReviewStarted && !showResults) {
+      interval = setInterval(() => {
+        setTimeElapsed(Math.floor((Date.now() - startTime) / 1000))
+      }, 1000)
+    }
+    return () => clearInterval(interval)
+  }, [isReviewStarted, showResults, startTime])
+
+  // 틀린 문제들 로드
+  const fetchWrongQuestions = async (userId: string) => {
+    try {
+      setIsLoading(true)
+      const response = await fetch(`http://localhost:8000/api/quiz/review/${userId}`)
+      const data = await response.json()
+      
+      if (data.questions.length === 0) {
+        router.push("/quiz")
+        return
+      }
+      
+      setWrongQuestions(data.questions)
+      setSelectedAnswers(new Array(data.questions.length).fill(-1))
+    } catch (error) {
+      console.error("틀린 문제 로드 실패:", error)
+      router.push("/quiz")
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   // 복습 시작
   const startReview = () => {
     setIsReviewStarted(true)
+    setStartTime(Date.now())
   }
 
   // 답안 선택
@@ -81,8 +104,38 @@ export default function QuizReviewPage() {
   }
 
   // 복습 완료
-  const finishReview = () => {
+  const finishReview = async () => {
     setShowResults(true)
+
+    if (!user) return
+
+    // 맞은 문제들 찾기
+    const correctQuestionIds = wrongQuestions
+      .filter((question, index) => selectedAnswers[index] === question.correct_answer)
+      .map(q => q._id)
+
+    // 서버에 결과 전송 (맞은 문제를 no_corrects에서 제거)
+    try {
+      await fetch("http://localhost:8000/api/quiz/review/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          user_id: user.user_id,
+          correct_question_ids: correctQuestionIds
+        })
+      })
+    } catch (error) {
+      console.error("복습 결과 저장 실패:", error)
+    }
+  }
+
+  // 시간 포맷팅
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toString().padStart(2, "0")}`
   }
 
   // 난이도 정보
@@ -99,15 +152,35 @@ export default function QuizReviewPage() {
     }
   }
 
-  if (wrongQuestions.length === 0) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
         <Navigation />
         <div className="flex items-center justify-center py-20">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <Loader2 className="h-12 w-12 border-b-2 border-primary mx-auto mb-4 animate-spin" />
             <p className="text-muted-foreground">복습 문제를 불러오는 중...</p>
           </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (wrongQuestions.length === 0) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navigation />
+        <div className="flex items-center justify-center py-20">
+          <Card className="max-w-md">
+            <CardContent className="p-12 text-center">
+              <CheckCircle className="h-12 w-12 text-chart-1 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-foreground mb-2">복습할 문제가 없습니다</h3>
+              <p className="text-muted-foreground mb-6">모든 문제를 맞혔습니다!</p>
+              <Button onClick={() => router.push("/quiz")}>
+                퀴즈 목록으로 돌아가기
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       </div>
     )
@@ -118,6 +191,12 @@ export default function QuizReviewPage() {
 
   // 복습 시작 전 화면
   if (!isReviewStarted) {
+    // 카테고리별 분포 계산
+    const categoryDistribution = wrongQuestions.reduce((acc, question) => {
+      acc[question.category] = (acc[question.category] || 0) + 1
+      return acc
+    }, {} as Record<string, number>)
+
     return (
       <div className="min-h-screen bg-background">
         <Navigation />
@@ -151,15 +230,7 @@ export default function QuizReviewPage() {
                 <div>
                   <h3 className="font-medium text-foreground mb-3">카테고리별 분포</h3>
                   <div className="space-y-2">
-                    {Object.entries(
-                      wrongQuestions.reduce(
-                        (acc, question) => {
-                          acc[question.category] = (acc[question.category] || 0) + 1
-                          return acc
-                        },
-                        {} as Record<string, number>,
-                      ),
-                    ).map(([category, count]) => (
+                    {Object.entries(categoryDistribution).map(([category, count]) => (
                       <div key={category} className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">{category}</span>
                         <Badge variant="outline">{count}문제</Badge>
@@ -183,11 +254,11 @@ export default function QuizReviewPage() {
   // 결과 화면
   if (showResults) {
     const correctAnswers = selectedAnswers.filter(
-      (answer, index) => answer === wrongQuestions[index].correctAnswer,
+      (answer, index) => answer === wrongQuestions[index].correct_answer,
     ).length
     const score = Math.round((correctAnswers / wrongQuestions.length) * 100)
     const improvedQuestions = wrongQuestions.filter(
-      (question, index) => selectedAnswers[index] === question.correctAnswer,
+      (question, index) => selectedAnswers[index] === question.correct_answer,
     )
 
     return (
@@ -209,7 +280,7 @@ export default function QuizReviewPage() {
               </CardHeader>
 
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                   <div className="text-center p-4 bg-muted rounded-lg">
                     <div className="text-2xl font-bold text-chart-1 mb-1">{improvedQuestions.length}</div>
                     <div className="text-sm text-muted-foreground">개선된 문제</div>
@@ -219,6 +290,10 @@ export default function QuizReviewPage() {
                       {wrongQuestions.length - correctAnswers}
                     </div>
                     <div className="text-sm text-muted-foreground">여전히 틀린 문제</div>
+                  </div>
+                  <div className="text-center p-4 bg-muted rounded-lg">
+                    <div className="text-2xl font-bold text-foreground mb-1">{formatTime(timeElapsed)}</div>
+                    <div className="text-sm text-muted-foreground">소요 시간</div>
                   </div>
                 </div>
 
@@ -233,6 +308,10 @@ export default function QuizReviewPage() {
                       setSelectedAnswers(new Array(wrongQuestions.length).fill(-1))
                       setShowResults(false)
                       setIsReviewStarted(false)
+                      setTimeElapsed(0)
+                      if (user) {
+                        fetchWrongQuestions(user.user_id)
+                      }
                     }}
                     variant="outline"
                     className="flex-1 bg-transparent"
@@ -249,11 +328,11 @@ export default function QuizReviewPage() {
               <h2 className="text-xl font-semibold text-foreground">문제별 해설</h2>
               {wrongQuestions.map((question, index) => {
                 const userAnswer = selectedAnswers[index]
-                const isCorrect = userAnswer === question.correctAnswer
+                const isCorrect = userAnswer === question.correct_answer
                 const difficultyInfo = getDifficultyInfo(question.difficulty)
 
                 return (
-                  <Card key={question.id}>
+                  <Card key={question._id}>
                     <CardHeader>
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -277,7 +356,7 @@ export default function QuizReviewPage() {
                       <div className="space-y-2">
                         {question.options.map((option, optionIndex) => {
                           let className = "p-3 rounded-lg border "
-                          if (optionIndex === question.correctAnswer) {
+                          if (optionIndex === question.correct_answer) {
                             className += "bg-chart-1/10 border-chart-1 text-chart-1"
                           } else if (optionIndex === userAnswer && !isCorrect) {
                             className += "bg-destructive/10 border-destructive text-destructive"
@@ -290,7 +369,7 @@ export default function QuizReviewPage() {
                               <div className="flex items-center space-x-2">
                                 <span className="font-medium">{String.fromCharCode(65 + optionIndex)}.</span>
                                 <span>{option}</span>
-                                {optionIndex === question.correctAnswer && (
+                                {optionIndex === question.correct_answer && (
                                   <Badge variant="secondary" className="ml-auto bg-chart-1/20 text-chart-1">
                                     정답
                                   </Badge>
@@ -343,10 +422,16 @@ export default function QuizReviewPage() {
                   {currentQuestionIndex + 1} / {wrongQuestions.length}
                 </div>
               </div>
-              <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive">
-                <RotateCcw className="h-3 w-3 mr-1" />
-                복습 모드
-              </Badge>
+              <div className="flex items-center space-x-2">
+                <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive">
+                  <RotateCcw className="h-3 w-3 mr-1" />
+                  복습 모드
+                </Badge>
+                <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                  <Clock className="h-4 w-4" />
+                  <span>{formatTime(timeElapsed)}</span>
+                </div>
+              </div>
             </div>
             <Progress value={progress} className="h-2" />
           </div>
