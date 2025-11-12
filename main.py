@@ -157,7 +157,12 @@ def generate_quiz(collection_id: str):
             ]
         else:
             difficulty = int(parts[0].replace('level', ''))
-            category = parts[1]
+            if parts[1] == "economy":
+                category = "경제"
+            elif parts[1] == "finance":
+                category = "금융"
+            else:
+                category = parts[1]    
             
             # 필터 조건 생성
             match_condition = {"difficulty": difficulty}

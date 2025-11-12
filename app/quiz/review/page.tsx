@@ -463,8 +463,8 @@ export default function QuizReviewPage() {
                     }`}
                     onClick={() => selectAnswer(index)}
                   >
-                    <span className="font-medium mr-3">{String.fromCharCode(65 + index)}.</span>
-                    <span className="flex-1">{option}</span>
+                    <span className="font-medium mr-3 flex-shrink-0">{String.fromCharCode(65 + index)}.</span>
+                    <span className="flex-1 whitespace-normal break-words leading-relaxed">{option}</span>
                   </Button>
                 ))}
               </div>
