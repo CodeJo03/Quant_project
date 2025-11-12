@@ -24,11 +24,6 @@ import {
   Loader2,
 } from "lucide-react"
 
-/*
- * 경제사전 페이지 컴포넌트
- * 난이도별 경제 용어 검색, 즐겨찾기, 카테고리 필터링 기능 제공
- */
-
 // 경제 용어 데이터 타입 정의
 interface EconomicTerm {
   id: string
@@ -40,7 +35,8 @@ interface EconomicTerm {
   relatedTerms: string[]
 }
 
-// 전역 데이터 캐시
+// 전역 데이터 캐시 -> 경제용어를 잠시 다른 곳을 갔거나 새로 고침마다 부를 경우 
+// 트래픽 과부화로 사용자에게 많은 시간을 쓰게 하는 불편함이 생길 것 같아 이를 임시 적용
 let cachedTerms: EconomicTerm[] | null = null
 let cacheTimestamp: number | null = null
 const CACHE_DURATION = 30 * 60 * 1000 // 30분 캐시 유지

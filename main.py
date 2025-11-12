@@ -11,7 +11,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 개발 중에는 *로 두고, 배포 시에는 실제 도메인으로 제한
+    allow_origins=["*"],  # !!! 개발 중 편의를 위해 *로 두고, 배포 시에는 실제 도메인으로 제한할것을 기억!
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -22,7 +22,7 @@ db = client['econolearn']
 users_collection = db['users']
 
 # --- Pydantic 모델 정의 (데이터 형태 선언) ---
-# 데이터 유효성 검사, JSON 변환
+# 데이터 유효성 검사를 위해, JSON 변환
 class UserRegister(BaseModel):
     user_id: str
     password: str
@@ -55,23 +55,23 @@ class EconomicTermModel(BaseModel):
     category: str
     relatedTerms: list[str]
 
-# --- API 라우트 정의 ---
+# --- 기본적인 유저 회원가입 등 관련 API ---
 
+# 회원가입 API
 @app.post("/api/auth/register", status_code=status.HTTP_201_CREATED)
 def register(user: UserRegister):  # 들어오는 데이터 : UserRegister 모델
-    # user_id 중복 확인
+    # user_id 중복 확인(저장된 데이터 베이스에 이미 해당 id가 존재할 경우)
     if users_collection.find_one({'user_id': user.user_id}):
         raise HTTPException(status_code=400, detail="이미 존재하는 사용자 ID입니다")
     
-    # 이메일 중복 확인
+    # 이메일 중복 확인(저장된 데이터 베이스에 이미 해당 이메일이 존재할 경우)
     if users_collection.find_one({'email': user.email}):
         raise HTTPException(status_code=400, detail="이미 존재하는 이메일입니다")
-
-    # FastAPI가 자동으로 user.user_id, user.password 등을 검증
-
+    
+    # 유저의 개인정보 보호를 위해 비밀번호 저장을 해시로 암호화하여 개발자도 모르도록 설정
     hashed_password = generate_password_hash(user.password)
     
-    #Pydantic 모델을 딕셔너리로 변환
+    # 위의 중복검사 끝난 후 입력받은 Pydantic 모델을 user데이터 베이스에 저장하기 위해 dict화
     user_data = user.dict()
     user_data['password'] = hashed_password
     
@@ -79,14 +79,18 @@ def register(user: UserRegister):  # 들어오는 데이터 : UserRegister 모�
     
     return {"message": "회원가입이 완료되었습니다", "user_id": user.user_id}
 
+# 로그인 API
 @app.post("/api/auth/login")
 def login(user: UserLogin):
+    # 로그인하기 위해 입력받은 id가 현제 관리중인 유저 데이터베이스에 존재하는지 검사
     user_in_db = users_collection.find_one({'user_id': user.user_id})
     if not user_in_db:
         raise HTTPException(status_code=400, detail="존재하지 않는 사용자 ID입니다")
+    # 존재할 경우 입력받은 password또한 해시화하여 데이터베이스의 해당아이디의 비밀번호와 같은지 비교
     if not check_password_hash(user_in_db['password'], user.password):
         raise HTTPException(status_code=400, detail="비밀번호가 올바르지 않습니다")
-    # 로그인 성공 시 필요한 정보만 반환
+    
+    # 로그인 성공 시 필요한 유저 정보 반환
     return {
         "user_id": user_in_db["user_id"],
         "name": user_in_db.get("name", ""),
@@ -95,14 +99,19 @@ def login(user: UserLogin):
         "message": "로그인 성공"
     }
     
+# 유저의 프로필 API -> 구현 필요    
 @app.post("/api/profile/refresh")
 def refresh(user: UserRefresh):
     return 0
-    
 
+# --- 경제 용어 사전 관련 API ---
+
+# 경제 용어 불러오는 API
 @app.get("/api/dictionary/terms")
 def get_economic_terms():
+    # return할 경제 용어들 담을 리스트 사전 선언
     terms = []
+    # db의 경제용어들을 돌며 사전 선언한 리스트에 추가함
     for doc in db['economic_terms'].find():
         terms.append({
             "id": str(doc.get("_id", "")),
@@ -115,9 +124,11 @@ def get_economic_terms():
         })
     return terms
 
+# --- 경제 용어 문제집 관련 API ---
+
+# 현재 서비스에서 제공 가능한 경제 용어 문제집들을 반환하는 API
 @app.get('/api/quiz/collections')
 def get_quiz_collections():
-    """사용 가능한 문제집 목록 반환"""
     try:
         collections = [
             # 1단계
@@ -140,23 +151,26 @@ def get_quiz_collections():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
+# 퀴즈를 생성하는 API
 @app.get('/api/quiz/generate/{collection_id}')
 def generate_quiz(collection_id: str):
-    """문제집 ID에 따라 랜덤 문제 생성"""
     try:
         quizzes_collection = db['quizzes']
         
-        # collection_id 파싱
+        # 받은 collection_id 값을 '-'기준으로 파싱
         parts = collection_id.split('-')
         
+        # 종합 문제집일 경우
         if collection_id == "all-comprehensive":
             # 모든 문제에서 50개 랜덤 선택
             pipeline = [
                 {"$sample": {"size": 50}}
             ]
+        # 단계 및 카테고리가 지정된 문제집일 경우
         else:
+            # 입력 받은 값에서 level의 수치만 필요하기에 replace
             difficulty = int(parts[0].replace('level', ''))
+            # 카테고리는 현재 mongoDB에 한국어로 저장되어 있기 때문에 한국어로 변환
             if parts[1] == "economy":
                 category = "경제"
             elif parts[1] == "finance":
@@ -164,7 +178,7 @@ def generate_quiz(collection_id: str):
             else:
                 category = parts[1]    
             
-            # 필터 조건 생성
+            # 위 조건들에 따라 필터 조건 생성
             match_condition = {"difficulty": difficulty}
             if category != "all":
                 match_condition["category"] = category
@@ -190,14 +204,13 @@ def generate_quiz(collection_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
+# 퀴즈 제출 API
 @app.post('/api/quiz/submit')
 def submit_quiz_results(data: dict):
-    """퀴즈 결과 제출 및 틀린 문제 저장"""
     try:
-        user_id = data.get('user_id')
+        user_id = data.get('user_id') # 현재 로그인 중인 user의 id
         wrong_question_ids = data.get('wrong_question_ids', [])  # 틀린 문제의 _id 리스트
-        
+        # 로그인 하지 않을 경우 예외 처리
         if not user_id:
             raise HTTPException(status_code=400, detail="user_id is required")
         
@@ -208,7 +221,7 @@ def submit_quiz_results(data: dict):
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
         
-        # no_corrects 필드가 없으면 생성
+        # no_corrects 필드(사용자가 문제를 풂녀서 틀렸던 목록들)가 없으면 생성
         if 'no_corrects' not in user:
             user['no_corrects'] = []
         
@@ -233,10 +246,9 @@ def submit_quiz_results(data: dict):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
+# 현재 로그인 한 사용자의 틀렸던 문제집 생성 API
 @app.get('/api/quiz/review/{user_id}')
 def get_review_questions(user_id: str):
-    """사용자의 틀린 문제 목록 가져오기"""
     try:
         users_collection = db['users']
         quizzes_collection = db['quizzes']
@@ -255,7 +267,7 @@ def get_review_questions(user_id: str):
                 "total": 0
             }
         
-        # ObjectId로 변환
+        # ObjectId로 변환(objectid로 현 변환하여 괜찮은지 자동 필터링 하며)
         object_ids = [ObjectId(qid) for qid in wrong_question_ids if ObjectId.is_valid(qid)]
         
         # 문제 가져오기
@@ -275,10 +287,9 @@ def get_review_questions(user_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
+# 틀렸던 문제 제출 API
 @app.post('/api/quiz/review/submit')
 def submit_review_results(data: dict):
-    """복습 결과 제출 및 맞은 문제 제거"""
     try:
         user_id = data.get('user_id')
         correct_question_ids = data.get('correct_question_ids', [])  # 맞은 문제의 _id 리스트
@@ -293,10 +304,10 @@ def submit_review_results(data: dict):
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
         
-        # 현재 틀린 문제 목록
+        # 현재 틀린 문제 목록(제출 당시의 DB이기에 제출 전의 상황)
         current_wrong = set(user.get('no_corrects', []))
         
-        # 맞은 문제 제거
+        # 맞은 문제 제거(제출 시 맞은 문제들을 현 DB현황에서 삭제)
         updated_wrong = list(current_wrong - set(correct_question_ids))
         
         # 데이터베이스 업데이트
@@ -315,10 +326,9 @@ def submit_review_results(data: dict):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
+# 사용자의 ㅟ즈 현 상황 불러오는 API
 @app.get('/api/quiz/stats/{user_id}')
 def get_user_quiz_stats(user_id: str):
-    """사용자의 퀴즈 통계 가져오기"""
     try:
         users_collection = db['users']
         
