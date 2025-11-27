@@ -18,6 +18,9 @@ import {
   BookOpen,
   TrendingUp,
   Loader2,
+  Trophy,
+  BrainCircuit,
+  Zap
 } from "lucide-react"
 import Link from "next/link"
 
@@ -44,7 +47,7 @@ export default function QuizPage() {
       const parsedUser = JSON.parse(userData)
       setUser(parsedUser)
       setSelectedDifficulty(parsedUser.know_level)
-      
+
       // 틀린 문제 수 가져오기
       fetchWrongQuestionsCount(parsedUser.user_id)
     }
@@ -82,13 +85,13 @@ export default function QuizPage() {
   const getDifficultyInfo = (difficulty: number) => {
     switch (difficulty) {
       case 1:
-        return { label: "초급", color: "bg-green-100 text-green-800", description: "기본 경제 개념" }
+        return { label: "Basic", color: "bg-chart-3/10 text-chart-3 border-chart-3/20", description: "기본 경제 개념" }
       case 2:
-        return { label: "중급", color: "bg-blue-100 text-blue-800", description: "투자 분석 기초" }
+        return { label: "Intermediate", color: "bg-primary/10 text-primary border-primary/20", description: "투자 분석 기초" }
       case 3:
-        return { label: "고급", color: "bg-purple-100 text-purple-800", description: "고급 투자 이론" }
+        return { label: "Advanced", color: "bg-chart-5/10 text-chart-5 border-chart-5/20", description: "고급 투자 이론" }
       default:
-        return { label: "종합", color: "bg-orange-100 text-orange-800", description: "전체 레벨" }
+        return { label: "General", color: "bg-muted text-muted-foreground", description: "전체 레벨" }
     }
   }
 
@@ -108,9 +111,9 @@ export default function QuizPage() {
   const getRecommendedCollections = () => {
     if (!user) return []
     const userLevel = user.know_level
-    return collections.filter((col) => 
-      col.difficulty === userLevel || 
-      col.difficulty === userLevel - 1 || 
+    return collections.filter((col) =>
+      col.difficulty === userLevel ||
+      col.difficulty === userLevel - 1 ||
       col.difficulty === userLevel + 1 ||
       col.difficulty === 0
     )
@@ -127,265 +130,269 @@ export default function QuizPage() {
   const filteredCollections = getFilteredCollections()
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background text-foreground">
       <Navigation />
 
-      <div className="py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* 헤더 섹션 */}
-          <div className="mb-8">
-            <div className="flex items-center space-x-3 mb-4">
-              <GraduationCap className="h-8 w-8 text-primary" />
-              <h1 className="text-3xl font-bold text-foreground">퀴즈</h1>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* 헤더 섹션 */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6">
+          <div>
+            <div className="flex items-center space-x-3 mb-2">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <GraduationCap className="h-6 w-6 text-primary" />
+              </div>
+              <h1 className="text-3xl font-bold tracking-tight">Skill Assessment</h1>
             </div>
-            <p className="text-lg text-muted-foreground">
-              {user ? `${user.name}님, ` : ""}경제 지식을 테스트하고 실력을 향상시켜보세요
+            <p className="text-muted-foreground max-w-2xl">
+              실전 퀴즈를 통해 금융 지식을 테스트하고 역량을 강화하세요.
+              {user && <span className="text-primary block mt-1">{user.name}님의 현재 레벨은 {getDifficultyInfo(user.know_level).label}입니다.</span>}
             </p>
           </div>
+        </div>
 
-          {/* 통계 카드들 */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">사용 가능한 문제집</p>
-                    <p className="text-2xl font-bold text-foreground">{collections.length}</p>
-                  </div>
-                  <BookOpen className="h-8 w-8 text-primary" />
+        {/* 통계 카드들 - 그리드 레이아웃 개선 */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          <Card className="bg-card/50 backdrop-blur-sm border-primary/10">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-primary/10 rounded-full">
+                  <BookOpen className="h-6 w-6 text-primary" />
                 </div>
-              </CardContent>
-            </Card>
+                <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">Available</Badge>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Total Quizzes</p>
+                <p className="text-3xl font-bold text-foreground mt-1">{collections.length}</p>
+              </div>
+            </CardContent>
+          </Card>
 
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">내 레벨</p>
-                    <p className="text-2xl font-bold text-foreground">
-                      {user ? getDifficultyInfo(user.know_level).label : "-"}
-                    </p>
-                  </div>
-                  <Target className="h-8 w-8 text-secondary" />
+          <Card className="bg-card/50 backdrop-blur-sm border-secondary/10">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-secondary/10 rounded-full">
+                  <Trophy className="h-6 w-6 text-secondary" />
                 </div>
-              </CardContent>
-            </Card>
+                <Badge variant="outline" className="bg-secondary/5 text-secondary border-secondary/20">Current Level</Badge>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Your Rank</p>
+                <p className="text-3xl font-bold text-foreground mt-1">
+                  {user ? getDifficultyInfo(user.know_level).label : "-"}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
 
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">복습할 문제</p>
-                    <p className="text-2xl font-bold text-foreground">{wrongQuestionsCount}</p>
-                  </div>
-                  <XCircle className="h-8 w-8 text-destructive" />
+          <Card className="bg-card/50 backdrop-blur-sm border-destructive/10">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-destructive/10 rounded-full">
+                  <BrainCircuit className="h-6 w-6 text-destructive" />
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+                <Badge variant="outline" className="bg-destructive/5 text-destructive border-destructive/20">Review Needed</Badge>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Incorrect Answers</p>
+                <p className="text-3xl font-bold text-foreground mt-1">{wrongQuestionsCount}</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-          <div className="grid lg:grid-cols-3 gap-8">
-            {/* 왼쪽 컬럼 - 문제집 목록 */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* 난이도 필터 */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>난이도별 문제집</CardTitle>
-                  <CardDescription>원하는 난이도를 선택하여 문제집을 풀어보세요</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-wrap gap-3">
-                    <Button
-                      variant={selectedDifficulty === null ? "default" : "outline"}
-                      onClick={() => setSelectedDifficulty(null)}
-                      className={selectedDifficulty === null ? "" : "bg-transparent"}
-                    >
-                      전체
-                    </Button>
-                    {[1, 2, 3, 0].map((level) => {
-                      const info = getDifficultyInfo(level)
-                      return (
-                        <Button
-                          key={level}
-                          variant={selectedDifficulty === level ? "default" : "outline"}
-                          onClick={() => setSelectedDifficulty(level)}
-                          className={selectedDifficulty === level ? "" : "bg-transparent"}
-                        >
-                          {info.label}
-                        </Button>
-                      )
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* 왼쪽 컬럼 - 문제집 목록 */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* 난이도 필터 - 탭 스타일로 변경 */}
+            <div className="flex flex-wrap gap-2 p-1 bg-muted/50 rounded-lg w-fit">
+              <Button
+                variant={selectedDifficulty === null ? "secondary" : "ghost"}
+                size="sm"
+                onClick={() => setSelectedDifficulty(null)}
+                className="rounded-md"
+              >
+                All Levels
+              </Button>
+              {[1, 2, 3, 0].map((level) => {
+                const info = getDifficultyInfo(level)
+                return (
+                  <Button
+                    key={level}
+                    variant={selectedDifficulty === level ? "secondary" : "ghost"}
+                    size="sm"
+                    onClick={() => setSelectedDifficulty(level)}
+                    className="rounded-md"
+                  >
+                    {info.label}
+                  </Button>
+                )
+              })}
+            </div>
 
-              {/* 문제집 목록 */}
-              <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-foreground">
-                  {selectedDifficulty !== null 
-                    ? `${getDifficultyInfo(selectedDifficulty).label} 문제집` 
-                    : "전체 문제집"}
+            {/* 문제집 목록 */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
+                  <Zap className="h-5 w-5 text-yellow-500" />
+                  {selectedDifficulty !== null
+                    ? `${getDifficultyInfo(selectedDifficulty).label} Quizzes`
+                    : "All Quizzes"}
                 </h2>
+                <span className="text-sm text-muted-foreground">{filteredCollections.length} quizzes available</span>
+              </div>
 
-                {isLoading ? (
-                  <Card>
-                    <CardContent className="p-12 text-center">
-                      <Loader2 className="h-12 w-12 text-muted-foreground mx-auto mb-4 animate-spin" />
-                      <h3 className="text-lg font-medium text-foreground mb-2">문제집을 불러오는 중입니다</h3>
-                      <p className="text-muted-foreground">잠시만 기다려주세요...</p>
-                    </CardContent>
-                  </Card>
-                ) : filteredCollections.length === 0 ? (
-                  <Card>
-                    <CardContent className="p-12 text-center">
-                      <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-foreground mb-2">해당 난이도의 문제집이 없습니다</h3>
-                      <p className="text-muted-foreground">다른 난이도를 선택해보세요</p>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  filteredCollections.map((collection) => {
+              {isLoading ? (
+                <div className="flex flex-col items-center justify-center h-64 space-y-4 border border-dashed border-border rounded-xl">
+                  <Loader2 className="h-8 w-8 text-primary animate-spin" />
+                  <p className="text-muted-foreground animate-pulse">Loading quizzes...</p>
+                </div>
+              ) : filteredCollections.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-64 text-center border border-dashed border-border rounded-xl bg-muted/30">
+                  <BookOpen className="h-12 w-12 text-muted-foreground mb-4 opacity-50" />
+                  <h3 className="text-lg font-medium text-foreground mb-2">No quizzes found</h3>
+                  <p className="text-muted-foreground">Try selecting a different difficulty level.</p>
+                </div>
+              ) : (
+                <div className="grid gap-4">
+                  {filteredCollections.map((collection) => {
                     const difficultyInfo = getDifficultyInfo(collection.difficulty)
                     const isRecommended = recommendedCollections.some((rc) => rc.id === collection.id)
 
                     return (
-                      <Card key={collection.id} className="hover:shadow-lg transition-shadow">
-                        <CardHeader>
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-3 mb-2">
-                                <CardTitle className="text-lg">{collection.title}</CardTitle>
-                                <Badge className={difficultyInfo.color}>{difficultyInfo.label}</Badge>
+                      <Card key={collection.id} className="group hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 bg-card/50 backdrop-blur-sm overflow-hidden">
+                        <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-primary/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <CardContent className="p-6">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div className="flex-1 space-y-2">
+                              <div className="flex items-center gap-2">
+                                <h3 className="text-lg font-bold group-hover:text-primary transition-colors">{collection.title}</h3>
                                 {isRecommended && user && (
-                                  <Badge variant="secondary" className="bg-secondary/10 text-secondary">
-                                    <Star className="h-3 w-3 mr-1" />
-                                    추천
+                                  <Badge variant="secondary" className="bg-secondary/10 text-secondary border-secondary/20 text-[10px] px-1.5 h-5">
+                                    Recommended
                                   </Badge>
                                 )}
                               </div>
-                              <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                                <div className="flex items-center space-x-1">
-                                  <BookOpen className="h-4 w-4" />
-                                  <span>{collection.count}문제</span>
+
+                              <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                                <Badge variant="outline" className={`${difficultyInfo.color} text-[10px] px-2 py-0 h-5`}>
+                                  {difficultyInfo.label}
+                                </Badge>
+                                <div className="flex items-center gap-1">
+                                  <BookOpen className="h-3.5 w-3.5" />
+                                  <span>{collection.count} Qs</span>
                                 </div>
-                                <div className="flex items-center space-x-1">
-                                  <Clock className="h-4 w-4" />
-                                  <span>약 {Math.ceil(collection.count * 0.5)}분</span>
+                                <div className="flex items-center gap-1">
+                                  <Clock className="h-3.5 w-3.5" />
+                                  <span>~{Math.ceil(collection.count * 0.5)} min</span>
                                 </div>
                                 {collection.category !== "all" && (
-                                  <div className="flex items-center space-x-1">
+                                  <div className="flex items-center gap-1">
                                     {getCategoryIcon(collection.category)}
                                     <span>{collection.category}</span>
                                   </div>
                                 )}
                               </div>
                             </div>
-                          </div>
-                        </CardHeader>
 
-                        <CardContent>
-                          <Button asChild className="w-full">
-                            <Link href={`/quiz/${collection.id}`}>
-                              <Play className="h-4 w-4 mr-2" />
-                              퀴즈 시작하기
-                            </Link>
-                          </Button>
+                            <Button asChild className="shrink-0 w-full sm:w-auto group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                              <Link href={`/quiz/${collection.id}`}>
+                                <Play className="h-4 w-4 mr-2" />
+                                Start Quiz
+                              </Link>
+                            </Button>
+                          </div>
                         </CardContent>
                       </Card>
                     )
-                  })
-                )}
-              </div>
+                  })}
+                </div>
+              )}
             </div>
+          </div>
 
-            {/* 오른쪽 컬럼 - 추가 기능 */}
-            <div className="space-y-6">
-              {/* 추천 문제집 */}
-              {user && recommendedCollections.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center space-x-2">
-                      <Star className="h-5 w-5 text-secondary" />
-                      <span>맞춤 추천</span>
-                    </CardTitle>
-                    <CardDescription>
-                      {user.name}님의 레벨({getDifficultyInfo(user.know_level).label})에 맞는 문제집
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {recommendedCollections.slice(0, 3).map((collection) => (
-                        <Button
-                          key={collection.id}
-                          asChild
-                          variant="outline"
-                          className="w-full justify-start bg-transparent hover:bg-primary/5"
-                        >
-                          <Link href={`/quiz/${collection.id}`}>
-                            <Play className="h-4 w-4 mr-2" />
-                            {collection.title.replace(' 문제집', '')}
-                          </Link>
-                        </Button>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* 틀린 문제 복습 */}
-              {user && wrongQuestionsCount > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center space-x-2">
-                      <RotateCcw className="h-5 w-5 text-destructive" />
-                      <span>틀린 문제 복습</span>
-                    </CardTitle>
-                    <CardDescription>틀린 문제들을 다시 풀어보세요</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-destructive mb-1">{wrongQuestionsCount}</div>
-                        <div className="text-sm text-muted-foreground">복습할 문제</div>
-                      </div>
-                      <Button asChild className="w-full bg-transparent" variant="outline">
-                        <Link href="/quiz/review">
-                          <RotateCcw className="h-4 w-4 mr-2" />
-                          복습 시작하기
-                        </Link>
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* 퀴즈 팁 */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>퀴즈 팁</CardTitle>
+          {/* 오른쪽 컬럼 - 추가 기능 */}
+          <div className="space-y-6">
+            {/* 추천 문제집 */}
+            {user && recommendedCollections.length > 0 && (
+              <Card className="border-secondary/20 bg-secondary/5">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center space-x-2 text-base">
+                    <Star className="h-4 w-4 text-secondary" />
+                    <span>Recommended for You</span>
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3 text-sm text-muted-foreground">
-                    <div className="flex items-start space-x-2">
-                      <div className="w-1.5 h-1.5 bg-primary rounded-full mt-2 flex-shrink-0"></div>
-                      <span>차근차근 문제를 읽고 답을 선택하세요</span>
-                    </div>
-                    <div className="flex items-start space-x-2">
-                      <div className="w-1.5 h-1.5 bg-secondary rounded-full mt-2 flex-shrink-0"></div>
-                      <span>틀린 문제는 해설을 꼭 확인하세요</span>
-                    </div>
-                    <div className="flex items-start space-x-2">
-                      <div className="w-1.5 h-1.5 bg-accent rounded-full mt-2 flex-shrink-0"></div>
-                      <span>정기적으로 복습하여 실력을 향상시키세요</span>
-                    </div>
-                    <div className="flex items-start space-x-2">
-                      <div className="w-1.5 h-1.5 bg-chart-1 rounded-full mt-2 flex-shrink-0"></div>
-                      <span>퀴즈를 끝까지 완료해야 결과가 저장됩니다</span>
-                    </div>
+                  <div className="space-y-3">
+                    {recommendedCollections.slice(0, 3).map((collection) => (
+                      <Link
+                        key={collection.id}
+                        href={`/quiz/${collection.id}`}
+                        className="flex items-center justify-between p-3 rounded-lg bg-background/50 hover:bg-background border border-transparent hover:border-secondary/20 transition-all group"
+                      >
+                        <span className="text-sm font-medium group-hover:text-secondary transition-colors truncate flex-1 mr-2">
+                          {collection.title.replace(' 문제집', '')}
+                        </span>
+                        <Play className="h-3 w-3 text-muted-foreground group-hover:text-secondary" />
+                      </Link>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
-            </div>
+            )}
+
+            {/* 틀린 문제 복습 */}
+            {user && wrongQuestionsCount > 0 && (
+              <Card className="border-destructive/20 bg-destructive/5">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center space-x-2 text-base">
+                    <RotateCcw className="h-4 w-4 text-destructive" />
+                    <span>Review Incorrect Answers</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Questions to review</span>
+                      <span className="text-xl font-bold text-destructive">{wrongQuestionsCount}</span>
+                    </div>
+                    <Button asChild className="w-full bg-background hover:bg-destructive/10 text-destructive border border-destructive/20" variant="outline">
+                      <Link href="/quiz/review">
+                        Start Review Session
+                      </Link>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* 퀴즈 팁 */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Pro Tips</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex gap-3">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <span className="text-xs font-bold text-primary">1</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">Read each question carefully. Financial terms can be tricky.</p>
+                  </div>
+                  <div className="flex gap-3">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <span className="text-xs font-bold text-primary">2</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">Review explanations for incorrect answers to improve your score.</p>
+                  </div>
+                  <div className="flex gap-3">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <span className="text-xs font-bold text-primary">3</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">Regular practice is key to mastering quantitative analysis.</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>

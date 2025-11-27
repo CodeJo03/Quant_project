@@ -21,7 +21,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="ko" className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+    <html lang="ko" className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen`}>
       <body>
         <Suspense fallback={<div>Loading...</div>}>
           <main>{children}</main>

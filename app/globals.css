@@ -4,75 +4,80 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* 경제 플랫폼에 맞는 전문적이고 신뢰감 있는 색상 토큰으로 업데이트 */
-  --background: oklch(1 0 0); /* #ffffff - 깔끔한 흰색 배경 */
-  --foreground: oklch(0.35 0 0); /* #475569 - 읽기 좋은 다크 그레이 텍스트 */
-  --card: oklch(0.98 0.02 195); /* #ecfeff - 연한 시안 카드 배경 */
-  --card-foreground: oklch(0.25 0.08 195); /* #164e63 - 진한 시안 카드 텍스트 */
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.35 0 0);
-  --primary: oklch(0.25 0.08 195); /* #164e63 - 신뢰감 있는 진한 시안 */
-  --primary-foreground: oklch(1 0 0); /* #ffffff - 흰색 텍스트 */
-  --secondary: oklch(0.75 0.15 120); /* #84cc16 - 포인트 그린 */
-  --secondary-foreground: oklch(0.25 0.08 195);
-  --muted: oklch(0.97 0.01 120); /* #f0fdf4 - 연한 그린 배경 */
-  --muted-foreground: oklch(0.4 0 0); /* #374151 - 뮤트된 텍스트 */
-  --accent: oklch(0.75 0.15 120); /* #84cc16 - 액센트 그린 */
-  --accent-foreground: oklch(0.25 0.08 195);
-  --destructive: oklch(0.55 0.22 25); /* #dc2626 - 에러 레드 */
-  --destructive-foreground: oklch(1 0 0);
-  --border: oklch(0.85 0 0); /* #d1d5db - 연한 보더 */
-  --input: oklch(0.96 0 0); /* #f1f5f9 - 인풋 배경 */
-  --ring: oklch(0.75 0.15 120); /* #84cc16 - 포커스 링 */
-  --chart-1: oklch(0.45 0.12 140); /* #15803d - 차트 색상 1 */
-  --chart-2: oklch(0.5 0.15 165); /* #059669 - 차트 색상 2 */
-  --chart-3: oklch(0.25 0.08 195); /* #164e63 - 차트 색상 3 */
-  --chart-4: oklch(0.75 0.15 120); /* #84cc16 - 차트 색상 4 */
-  --chart-5: oklch(0.55 0.22 25); /* #dc2626 - 차트 색상 5 */
+  /* Quant/Finance Platform Theme - Professional, Trustworthy, Data-Centric */
+  --background: oklch(0.15 0.02 240); /* #0f172a - Deep Navy Background (Slate 900) */
+  --foreground: oklch(0.98 0 0); /* #f8fafc - Bright White Text (Slate 50) */
+  --card: oklch(0.2 0.03 240); /* #1e293b - Slightly lighter navy for cards (Slate 800) */
+  --card-foreground: oklch(0.98 0 0);
+  --popover: oklch(0.15 0.02 240);
+  --popover-foreground: oklch(0.98 0 0);
+  --primary: oklch(0.6 0.15 250); /* #3b82f6 - Electric Blue for primary actions (Blue 500) */
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.25 0.03 240); /* #334155 - Secondary elements (Slate 700) */
+  --secondary-foreground: oklch(0.98 0 0);
+  --muted: oklch(0.25 0.03 240);
+  --muted-foreground: oklch(0.7 0.02 240); /* #94a3b8 - Muted text (Slate 400) */
+  --accent: oklch(0.85 0.15 85); /* #fbbf24 - Gold/Amber for financial accents (Amber 400) */
+  --accent-foreground: oklch(0.15 0.02 240);
+  --destructive: oklch(0.6 0.2 25); /* #ef4444 - Red for negative trends/errors */
+  --destructive-foreground: oklch(0.98 0 0);
+  --border: oklch(0.3 0.03 240); /* #475569 - Subtle borders (Slate 600) */
+  --input: oklch(0.25 0.03 240);
+  --ring: oklch(0.6 0.15 250);
+  
+  /* Financial Chart Colors */
+  --chart-1: oklch(0.6 0.15 250); /* Blue */
+  --chart-2: oklch(0.85 0.15 85); /* Gold */
+  --chart-3: oklch(0.65 0.2 150); /* Green (Growth) */
+  --chart-4: oklch(0.6 0.2 25); /* Red (Decline) */
+  --chart-5: oklch(0.7 0.1 280); /* Purple */
+  
   --radius: 0.5rem;
-  --sidebar: oklch(0.97 0.01 120); /* #f0fdf4 - 사이드바 배경 */
-  --sidebar-foreground: oklch(0.35 0 0);
-  --sidebar-primary: oklch(0.25 0.08 195);
-  --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.75 0.15 120);
-  --sidebar-accent-foreground: oklch(0.25 0.08 195);
-  --sidebar-border: oklch(0.85 0 0);
-  --sidebar-ring: oklch(0.75 0.15 120);
+  
+  --sidebar: oklch(0.12 0.02 240); /* Darker sidebar */
+  --sidebar-foreground: oklch(0.98 0 0);
+  --sidebar-primary: oklch(0.6 0.15 250);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent: oklch(0.25 0.03 240);
+  --sidebar-accent-foreground: oklch(0.98 0 0);
+  --sidebar-border: oklch(0.25 0.03 240);
+  --sidebar-ring: oklch(0.6 0.15 250);
 }
 
+/* Force Dark Mode by default for the financial terminal look */
 .dark {
-  --background: oklch(0.08 0 0); /* 다크모드 배경 */
-  --foreground: oklch(0.95 0 0); /* 다크모드 텍스트 */
-  --card: oklch(0.12 0.02 195);
-  --card-foreground: oklch(0.95 0 0);
-  --popover: oklch(0.08 0 0);
-  --popover-foreground: oklch(0.95 0 0);
-  --primary: oklch(0.4 0.12 195);
-  --primary-foreground: oklch(0.95 0 0);
-  --secondary: oklch(0.65 0.15 120);
-  --secondary-foreground: oklch(0.08 0 0);
-  --muted: oklch(0.15 0.02 195);
-  --muted-foreground: oklch(0.65 0 0);
-  --accent: oklch(0.65 0.15 120);
-  --accent-foreground: oklch(0.08 0 0);
-  --destructive: oklch(0.45 0.18 25);
-  --destructive-foreground: oklch(0.95 0 0);
-  --border: oklch(0.2 0 0);
-  --input: oklch(0.15 0 0);
-  --ring: oklch(0.65 0.15 120);
-  --chart-1: oklch(0.55 0.15 140);
-  --chart-2: oklch(0.6 0.18 165);
-  --chart-3: oklch(0.4 0.12 195);
-  --chart-4: oklch(0.65 0.15 120);
-  --chart-5: oklch(0.55 0.22 25);
-  --sidebar: oklch(0.1 0 0);
-  --sidebar-foreground: oklch(0.95 0 0);
-  --sidebar-primary: oklch(0.4 0.12 195);
-  --sidebar-primary-foreground: oklch(0.95 0 0);
-  --sidebar-accent: oklch(0.15 0.02 195);
-  --sidebar-accent-foreground: oklch(0.95 0 0);
-  --sidebar-border: oklch(0.2 0 0);
-  --sidebar-ring: oklch(0.65 0.15 120);
+  --background: oklch(0.15 0.02 240);
+  --foreground: oklch(0.98 0 0);
+  --card: oklch(0.2 0.03 240);
+  --card-foreground: oklch(0.98 0 0);
+  --popover: oklch(0.15 0.02 240);
+  --popover-foreground: oklch(0.98 0 0);
+  --primary: oklch(0.6 0.15 250);
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.25 0.03 240);
+  --secondary-foreground: oklch(0.98 0 0);
+  --muted: oklch(0.25 0.03 240);
+  --muted-foreground: oklch(0.7 0.02 240);
+  --accent: oklch(0.85 0.15 85);
+  --accent-foreground: oklch(0.15 0.02 240);
+  --destructive: oklch(0.6 0.2 25);
+  --destructive-foreground: oklch(0.98 0 0);
+  --border: oklch(0.3 0.03 240);
+  --input: oklch(0.25 0.03 240);
+  --ring: oklch(0.6 0.15 250);
+  --chart-1: oklch(0.6 0.15 250);
+  --chart-2: oklch(0.85 0.15 85);
+  --chart-3: oklch(0.65 0.2 150);
+  --chart-4: oklch(0.6 0.2 25);
+  --chart-5: oklch(0.7 0.1 280);
+  --sidebar: oklch(0.12 0.02 240);
+  --sidebar-foreground: oklch(0.98 0 0);
+  --sidebar-primary: oklch(0.6 0.15 250);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent: oklch(0.25 0.03 240);
+  --sidebar-accent-foreground: oklch(0.98 0 0);
+  --sidebar-border: oklch(0.25 0.03 240);
+  --sidebar-ring: oklch(0.6 0.15 250);
 }
 
 @theme inline {
@@ -114,6 +119,9 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  
+  /* Custom Animations for Financial Data */
+  --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 @layer base {
